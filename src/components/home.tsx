@@ -20,7 +20,10 @@ interface Activity {
   isRegistered: boolean;
 }
 
+import { useUser } from "../hooks/useUser";
+
 const Home = () => {
+  const { user, loading, error } = useUser();
   const [showAchievement, setShowAchievement] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([
     {
@@ -132,15 +135,28 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* User Header */}
-      <UserHeader
-        userName="Sarah Johnson"
-        userAvatar="https://api.dicebear.com/7.x/avataaars/svg?seed=sarah"
-        userRole="Attendee"
-        notificationCount={3}
-        onLogout={() => console.log("Logout clicked")}
-        onSettings={() => console.log("Settings clicked")}
-        onNotifications={() => console.log("Notifications clicked")}
-      />
+      {loading ? (
+        <div className="w-full h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="w-full h-screen flex items-center justify-center text-red-500">
+          {error}
+        </div>
+      ) : (
+        <UserHeader
+          userName={user?.name || "Guest"}
+          userAvatar={user?.avatar_url}
+          userRole={user?.role || "Attendee"}
+          notificationCount={3}
+          onLogout={async () => {
+            await supabase.auth.signOut();
+            window.location.href = "/";
+          }}
+          onSettings={() => console.log("Settings clicked")}
+          onNotifications={() => console.log("Notifications clicked")}
+        />
+      )}
 
       <div className="p-6">
         {/* Achievement Animation */}
@@ -171,10 +187,11 @@ const Home = () => {
             {/* Left Column - Points & Achievements */}
             <div className="h-[578px]">
               <PointsAchievements
-                totalPoints={userPoints}
+                totalPoints={user?.points || 0}
                 recentPoints={75}
-                level={4}
-                leaderboardPosition={12}
+                level={user?.level || 1}
+                leaderboardPosition={user?.leaderboard_position || 0}
+                achievements={user?.achievements || []}
                 onViewLeaderboard={() => setIsLeaderboardOpen(true)}
               />
             </div>
